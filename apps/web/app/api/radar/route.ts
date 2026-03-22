@@ -40,7 +40,7 @@ export async function GET() {
       ]
     }
 
-    // ⚠️ REMOVE FETCH INTERNO (ERA O PROBLEMA)
+    // 🧠 SAFE ANALYSIS (NO INTERNAL FETCH)
     const results = texts.map((text) => ({
       input: text,
       analysis: {
@@ -255,7 +255,7 @@ function executeSignals(signals: any[], price: number | null) {
 
 
 // =======================
-// PAPER TRADING
+// PAPER TRADING (FIXED)
 // =======================
 function processPaperTrades(execution: any[], price: number | null) {
   if (!price) return []
@@ -273,7 +273,9 @@ function processPaperTrades(execution: any[], price: number | null) {
       }
 
       portfolio.push(pos)
-      events.push({ type: "open", ...pos })
+
+      // ✅ FIX AQUI
+      events.push({ event: "open", ...pos })
     }
   })
 
@@ -312,9 +314,10 @@ function calculateStats(portfolio: any[]) {
 // =======================
 async function getMarketPrice() {
   try {
-    const res = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", {
-      cache: 'no-store'
-    })
+    const res = await fetch(
+      "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
+      { cache: 'no-store' }
+    )
     const data = await res.json()
     return parseFloat(data.price)
   } catch {
