@@ -37,27 +37,31 @@ export default function Home() {
       })
     }
 
-    data?.clusters?.forEach((c: any) => {
-      if (c.surge === 'high') {
-        newAlerts.push({
-          id: `surge-${c.theme}`,
-          type: 'surge',
-          severity: 'high',
-          message: `Surge crítico: ${c.theme}`
-        })
-      }
-    })
+    if (Array.isArray(data?.clusters)) {
+      data.clusters.forEach((c: any) => {
+        if (c?.surge === 'high') {
+          newAlerts.push({
+            id: `surge-${c.theme}`,
+            type: 'surge',
+            severity: 'high',
+            message: `Surge crítico: ${c.theme}`
+          })
+        }
+      })
+    }
 
-    data?.signals?.forEach((s: any) => {
-      if (s.signal === 'short' && s.confidence >= 80) {
-        newAlerts.push({
-          id: `signal-${s.theme}`,
-          type: 'signal',
-          severity: 'high',
-          message: `SHORT forte: ${s.theme}`
-        })
-      }
-    })
+    if (Array.isArray(data?.signals)) {
+      data.signals.forEach((s: any) => {
+        if (s?.signal === 'short' && s?.confidence >= 80) {
+          newAlerts.push({
+            id: `signal-${s.theme}`,
+            type: 'signal',
+            severity: 'high',
+            message: `SHORT forte: ${s.theme}`
+          })
+        }
+      })
+    }
 
     return newAlerts
   }
@@ -209,7 +213,7 @@ export default function Home() {
         </div>
       )}
 
-      {result?.signals && (
+      {Array.isArray(result?.signals) && (
         <div style={{ marginTop: 30 }}>
           <h3>⚡ Signals</h3>
 
@@ -228,7 +232,7 @@ export default function Home() {
         </div>
       )}
 
-      {result?.execution && (
+      {Array.isArray(result?.execution) && (
         <div style={{ marginTop: 30 }}>
           <h3>🧠 Execution Engine</h3>
 
@@ -251,7 +255,7 @@ export default function Home() {
         </div>
       )}
 
-      {result?.clusters && (
+      {Array.isArray(result?.clusters) && (
         <div style={{ marginTop: 40 }}>
           <h3>🧬 Narrativas</h3>
 
