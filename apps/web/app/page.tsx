@@ -18,11 +18,9 @@ export default function Home() {
     }
   }, [])
 
-  // 🧠 ALERT ENGINE
   const generateAlerts = (data: any) => {
     const newAlerts: any[] = []
 
-    // 🚨 RISCO GLOBAL
     if (data?.meta?.highRiskCount > 0) {
       newAlerts.push({
         id: 'global-risk',
@@ -32,7 +30,6 @@ export default function Home() {
       })
     }
 
-    // ⚡ SURGE
     data?.clusters?.forEach((c: any) => {
       if (c.surge === 'high') {
         newAlerts.push({
@@ -44,7 +41,6 @@ export default function Home() {
       }
     })
 
-    // 🧠 SIGNALS
     data?.signals?.forEach((s: any) => {
       if (s.signal === 'short' && s.confidence >= 80) {
         newAlerts.push({
@@ -85,7 +81,6 @@ export default function Home() {
       setResult(data)
       setLastUpdate(new Date().toLocaleTimeString())
 
-      // 🚀 ALERT ENGINE EXECUTION
       const generated = generateAlerts(data)
 
       const uniqueAlerts = generated.filter(a => {
@@ -100,7 +95,7 @@ export default function Home() {
 
         try {
           const audio = new Audio('/alert.mp3')
-          audio.play()
+          audio.play().catch(() => {})
         } catch {}
       }
 
@@ -137,7 +132,6 @@ export default function Home() {
         ● LIVE {lastUpdate && `| ${lastUpdate}`}
       </div>
 
-      {/* 🚨 ALERT PANEL */}
       {alerts.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           {alerts.slice(0, 3).map((a, i) => (
@@ -169,7 +163,6 @@ export default function Home() {
         {scanning ? 'Scanning...' : 'Scan Market'}
       </button>
 
-      {/* DEBUG */}
       <pre style={{
         marginTop: 20,
         background: "#111",
