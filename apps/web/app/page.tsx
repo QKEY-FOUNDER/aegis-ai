@@ -2,12 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react'
 
+type Alert = {
+  id: string
+  type: string
+  severity: string
+  message: string
+}
+
 export default function Home() {
   const [result, setResult] = useState<any>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [scanning, setScanning] = useState(false)
   const [alert, setAlert] = useState(false)
-  const [alerts, setAlerts] = useState<any[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
 
   const isMounted = useRef(true)
   const alertHistory = useRef<Set<string>>(new Set())
@@ -19,7 +26,7 @@ export default function Home() {
   }, [])
 
   const generateAlerts = (data: any) => {
-    const newAlerts: any[] = []
+    const newAlerts: Alert[] = []
 
     if (data?.meta?.highRiskCount > 0) {
       newAlerts.push({
@@ -94,8 +101,10 @@ export default function Home() {
         setAlert(true)
 
         try {
-          const audio = new Audio('/alert.mp3')
-          audio.play().catch(() => {})
+          if (typeof window !== 'undefined') {
+            const audio = new Audio('/alert.mp3')
+            audio.play().catch(() => {})
+          }
         } catch {}
       }
 
@@ -191,7 +200,9 @@ export default function Home() {
         </div>
       )}
 
-      {result?.execution?.[0]?.price && (
+      {Array.isArray(result?.execution) &&
+        result.execution.length > 0 &&
+        result.execution[0]?.price && (
         <div style={{ marginTop: 20 }}>
           <h3>💰 BTC Price</h3>
           <p>{result.execution[0].price} USDT</p>
