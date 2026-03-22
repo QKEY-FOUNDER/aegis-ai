@@ -13,18 +13,22 @@ export default function Home() {
   const [result, setResult] = useState<any>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [scanning, setScanning] = useState(false)
-  const [alert, setAlert] = useState(false)
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [connection, setConnection] = useState<'live' | 'reconnecting'>('live')
 
   const isMounted = useRef(true)
   const alertHistory = useRef<Set<string>>(new Set())
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // CLEANUP
   useEffect(() => {
     return () => {
       isMounted.current = false
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [])
 
+  // ALERT ENGINE
   const generateAlerts = (data: any) => {
     const newAlerts: Alert[] = []
 
@@ -66,22 +70,18 @@ export default function Home() {
     return newAlerts
   }
 
+  // CORE SCAN
   const scanMarket = async () => {
     if (scanning) return
 
     setScanning(true)
 
     try {
-      const res = await fetch('/api/radar')
+      const res = await fetch('/api/radar', { cache: 'no-store' })
 
-      const text = await res.text()
-      let data
+      if (!res.ok) throw new Error("Erro na API")
 
-      try {
-        data = JSON.parse(text)
-      } catch {
-        throw new Error("Resposta não é JSON válido")
-      }
+      const data = await res.json()
 
       if (!data?.success) {
         throw new Error(data?.error || "Radar falhou")
@@ -89,6 +89,7 @@ export default function Home() {
 
       if (!isMounted.current) return
 
+      setConnection('live')
       setResult(data)
       setLastUpdate(new Date().toLocaleTimeString())
 
@@ -102,7 +103,6 @@ export default function Home() {
 
       if (uniqueAlerts.length > 0) {
         setAlerts(prev => [...uniqueAlerts, ...prev])
-        setAlert(true)
 
         try {
           if (typeof window !== 'undefined') {
@@ -114,20 +114,28 @@ export default function Home() {
 
     } catch (err: any) {
       if (!isMounted.current) return
+
+      setConnection('reconnecting')
       setResult({ error: err.message || 'Erro desconhecido' })
+
     } finally {
       if (isMounted.current) setScanning(false)
     }
   }
 
+  // REAL-TIME MODE (CONTROLLED POLLING)
   useEffect(() => {
+    if (intervalRef.current) return
+
     scanMarket()
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       scanMarket()
     }, 15000)
 
-    return () => clearInterval(interval)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [])
 
   return (
@@ -141,18 +149,28 @@ export default function Home() {
 
       <h1>AEGIS AI</h1>
 
-      <div style={{ marginBottom: 20, color: "#00ff88" }}>
-        ● LIVE {lastUpdate && `| ${lastUpdate}`}
+      {/* STATUS */}
+      <div style={{ marginBottom: 20 }}>
+        <span style={{
+          color: connection === 'live' ? "#00ff88" : "#ffaa00",
+          fontWeight: 'bold'
+        }}>
+          ● {connection === 'live' ? 'LIVE' : 'RECONNECTING'}
+        </span>
+
+        {lastUpdate && (
+          <span style={{ marginLeft: 10, color: "#aaa" }}>
+            | {lastUpdate}
+          </span>
+        )}
       </div>
 
+      {/* ALERTS */}
       {alerts.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           {alerts.slice(0, 3).map((a, i) => (
             <div key={i} style={{
-              background:
-                a.severity === 'high' ? '#660000' :
-                a.severity === 'medium' ? '#665500' :
-                '#333',
+              background: '#660000',
               padding: 12,
               borderRadius: 8,
               marginBottom: 10,
@@ -164,7 +182,6 @@ export default function Home() {
 
           <button onClick={() => {
             setAlerts([])
-            setAlert(false)
             alertHistory.current.clear()
           }}>
             Limpar Alertas
@@ -172,10 +189,12 @@ export default function Home() {
         </div>
       )}
 
+      {/* MANUAL SCAN */}
       <button onClick={scanMarket} disabled={scanning}>
         {scanning ? 'Scanning...' : 'Scan Market'}
       </button>
 
+      {/* DEBUG */}
       <pre style={{
         marginTop: 20,
         background: "#111",
@@ -188,12 +207,14 @@ export default function Home() {
         {JSON.stringify(result, null, 2)}
       </pre>
 
+      {/* ERROR */}
       {result?.error && (
         <p style={{ color: 'red', marginTop: 20 }}>
           {result.error}
         </p>
       )}
 
+      {/* META */}
       {result?.meta && (
         <div style={{ marginTop: 20 }}>
           <h3>📊 Estado Global</h3>
@@ -204,8 +225,8 @@ export default function Home() {
         </div>
       )}
 
+      {/* PRICE */}
       {Array.isArray(result?.execution) &&
-        result.execution.length > 0 &&
         result.execution[0]?.price && (
         <div style={{ marginTop: 20 }}>
           <h3>💰 BTC Price</h3>
@@ -213,6 +234,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* SIGNALS */}
       {Array.isArray(result?.signals) && (
         <div style={{ marginTop: 30 }}>
           <h3>⚡ Signals</h3>
@@ -232,6 +254,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* EXECUTION */}
       {Array.isArray(result?.execution) && (
         <div style={{ marginTop: 30 }}>
           <h3>🧠 Execution Engine</h3>
@@ -255,6 +278,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* CLUSTERS */}
       {Array.isArray(result?.clusters) && (
         <div style={{ marginTop: 40 }}>
           <h3>🧬 Narrativas</h3>
